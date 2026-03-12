@@ -1,14 +1,18 @@
 import os
 import requests
 import csv
+from datetime import datetime
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from openai import OpenAI
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 
 
 # -----------------------------
@@ -25,54 +29,100 @@ def find_company_website(company_name):
         "engine": "google"
     }
 
-    try:
+    response = requests.get(url, params=params)
+    data = response.json()
 
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
-
-        data = response.json()
-
-        return data["organic_results"][0]["link"]
-
-    except Exception as e:
-
-        print("Error finding website:", e)
-        return None
+    return data["organic_results"][0]["link"]
 
 
 # -----------------------------
-# Find competitors
+# Find competitors (raw search)
 # -----------------------------
 
-def find_competitors(company_name):
+def find_competitors_raw(company_name):
 
     url = "https://serpapi.com/search"
 
     params = {
-        "q": company_name + " competitors",
+        "q": company_name + " project management competitors",
         "api_key": SERPAPI_KEY,
         "engine": "google"
     }
 
-    try:
+    response = requests.get(url, params=params)
 
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
+    data = response.json()
 
-        data = response.json()
+    titles = []
 
-        competitors = []
+    for result in data.get("organic_results", [])[:10]:
+        titles.append(result.get("title"))
 
-        for result in data.get("organic_results", [])[:5]:
-            title = result.get("title", "")
-            competitors.append(title)
+    return titles
 
-        return competitors
 
-    except Exception as e:
+# -----------------------------
+# Extract real competitors using AI
+# -----------------------------
 
-        print("Error finding competitors:", e)
-        return []
+def extract_real_competitors(company, titles):
+
+    prompt = f"""
+
+From the following search result titles extract ONLY real competing companies.
+
+Company: {company}
+
+Search results:
+{titles}
+
+Return a simple list of company names only.
+
+Example:
+Asana
+Monday
+ClickUp
+Notion
+Trello
+"""
+
+    completion = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0
+    )
+
+    text = completion.choices[0].message.content
+
+    competitors = [c.strip("- ").strip() for c in text.split("\n") if c.strip()]
+
+    return competitors
+
+
+# -----------------------------
+# Get funding data
+# -----------------------------
+
+def get_funding_data(company):
+
+    url = "https://serpapi.com/search"
+
+    params = {
+        "q": company + " funding raised investors",
+        "api_key": SERPAPI_KEY,
+        "engine": "google"
+    }
+
+    response = requests.get(url, params=params)
+
+    data = response.json()
+
+    funding = []
+
+    for result in data.get("organic_results", [])[:3]:
+        funding.append(result.get("snippet"))
+
+    return funding
 
 
 # -----------------------------
@@ -81,25 +131,15 @@ def find_competitors(company_name):
 
 def scrape_website(url):
 
-    try:
+    headers = {"User-Agent": "Mozilla/5.0"}
 
-        headers = {
-            "User-Agent": "Mozilla/5.0"
-        }
+    response = requests.get(url, headers=headers)
 
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
+    soup = BeautifulSoup(response.text, "html.parser")
 
-        soup = BeautifulSoup(response.text, "html.parser")
+    text = soup.get_text()
 
-        text = soup.get_text()
-
-        return text[:20000]
-
-    except Exception as e:
-
-        print("Error scraping website:", e)
-        return None
+    return text[:20000]
 
 
 # -----------------------------
@@ -123,73 +163,121 @@ def clean_text(text):
 
 
 # -----------------------------
+# Get news
+# -----------------------------
+
+def get_company_news(company):
+
+    url = "https://newsapi.org/v2/everything"
+
+    params = {
+        "q": company,
+        "sortBy": "publishedAt",
+        "language": "en",
+        "pageSize": 5,
+        "apiKey": NEWS_API_KEY
+    }
+
+    response = requests.get(url, params=params)
+
+    data = response.json()
+
+    news = []
+
+    for article in data.get("articles", []):
+
+        news.append({
+            "title": article["title"],
+            "source": article["source"]["name"],
+            "description": article["description"]
+        })
+
+    return news
+
+
+# -----------------------------
 # AI analysis
 # -----------------------------
 
-def analyze_company(text):
+def analyze_company(text, company, competitors, funding, news):
 
     text = text[:6000]
 
-    prompt = f"""
-You are a senior business analyst.
-
-Analyze the following company website text.
-
-Return the analysis in this EXACT format:
-
-Company:
-Industry:
-Market:
-Summary:
-
-Strengths:
--
-
-Weaknesses:
--
-
-Pain Points:
--
-
-Automation Opportunities:
--
-
-Website text:
-{text}
+    news_text = ""
+    for n in news:
+        news_text += f"""
+Title: {n['title']}
+Source: {n['source']}
+Summary: {n['description']}
 """
 
-    try:
+    funding_text = "\n".join(funding)
 
-        completion = client.chat.completions.create(
-            model="gpt-4.1-mini",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3
-        )
+    prompt = f"""
 
-        return completion.choices[0].message.content
+You are a senior market intelligence analyst.
 
-    except Exception as e:
+Analyze the following company.
 
-        print("AI analysis error:", e)
-        return None
+Company:
+{company}
+
+Competitors:
+{competitors}
+
+Funding Data:
+{funding_text}
+
+Recent News:
+{news_text}
+
+Website Text:
+{text}
+
+Return a structured report including:
+
+Company Summary
+
+Industry & Market
+
+Funding & Growth Signals
+
+Competitor Landscape
+
+Strategic Signals
+
+Threats
+
+Automation Opportunities
+
+Also rank the competitors by relevance.
+
+"""
+
+    completion = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3
+    )
+
+    return completion.choices[0].message.content
 
 
 # -----------------------------
-# Save results
+# Save history
 # -----------------------------
 
 def save_to_csv(company, website, competitors, analysis):
 
-    file_exists = os.path.isfile("analysis.csv")
+    file_exists = os.path.isfile("analysis_history.csv")
 
-    with open("analysis.csv", "a", newline="", encoding="utf-8") as file:
+    with open("analysis_history.csv", "a", newline="", encoding="utf-8") as file:
 
         writer = csv.writer(file)
 
         if not file_exists:
             writer.writerow([
+                "Date",
                 "Company",
                 "Website",
                 "Competitors",
@@ -197,11 +285,40 @@ def save_to_csv(company, website, competitors, analysis):
             ])
 
         writer.writerow([
+            datetime.now().strftime("%Y-%m-%d"),
             company,
             website,
             ", ".join(competitors),
             analysis
         ])
+
+
+# -----------------------------
+# Generate PDF report
+# -----------------------------
+
+def generate_pdf(company, analysis):
+
+    styles = getSampleStyleSheet()
+
+    filename = f"{company}_report.pdf"
+
+    story = []
+
+    story.append(Paragraph(f"{company} Market Intelligence Report", styles["Title"]))
+
+    story.append(Spacer(1, 20))
+
+    for line in analysis.split("\n"):
+
+        story.append(Paragraph(line, styles["BodyText"]))
+        story.append(Spacer(1, 6))
+
+    doc = SimpleDocTemplate(filename)
+
+    doc.build(story)
+
+    print(f"\nPDF report created: {filename}")
 
 
 # -----------------------------
@@ -213,48 +330,33 @@ def main():
     company = input("Enter company name: ")
 
     print("\nFinding company website...")
-
     website = find_company_website(company)
-
-    if not website:
-        print("Website not found.")
-        return
-
-    print("Website found:", website)
+    print("Website:", website)
 
     print("\nFinding competitors...")
+    raw = find_competitors_raw(company)
+    competitors = extract_real_competitors(company, raw)
+    print("Competitors:", competitors)
 
-    competitors = find_competitors(company)
-
-    print("Competitors found:", competitors)
+    print("\nGetting funding data...")
+    funding = get_funding_data(company)
 
     print("\nScraping website...")
-
     text = scrape_website(website)
-
-    if not text:
-        print("Could not scrape website.")
-        return
-
-    print("Cleaning website text...")
-
     clean = clean_text(text)
 
-    print("\nAnalyzing company with AI...\n")
+    print("\nCollecting news...")
+    news = get_company_news(company)
 
-    analysis = analyze_company(clean)
+    print("\nRunning AI analysis...\n")
 
-    if not analysis:
-        print("AI analysis failed.")
-        return
-
-    print("Company Intelligence Report\n")
+    analysis = analyze_company(clean, company, competitors, funding, news)
 
     print(analysis)
 
     save_to_csv(company, website, competitors, analysis)
 
-    print("\nAnalysis saved to analysis.csv")
+    generate_pdf(company, analysis)
 
 
 if __name__ == "__main__":
