@@ -1,4 +1,4 @@
 .env
-analysis.csv
+analysis_history.csv
+*_report.pdf
 __pycache__/
-*.pyc
