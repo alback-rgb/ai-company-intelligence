@@ -1,80 +1,73 @@
-AI Company Intelligence Tool
+# AI Company Intelligence Tool
 
-An automated market intelligence tool that collects company data from multiple sources and generates a structured analysis report using AI.
+An AI-powered market intelligence system that automatically collects, analyzes, and generates strategic insights about companies.
 
-The tool gathers:
+This tool gathers information from multiple external sources, processes it using AI models, and produces a structured intelligence report.
 
-Company website information
+It demonstrates the integration of **Python automation, web scraping, API orchestration, and AI-driven analysis** to generate actionable business insights.
 
-Competitors
+---
 
-Funding signals
+# Overview
 
-Recent news
+The AI Company Intelligence Tool automates the process of researching companies by collecting data from:
 
-Strategic insights
+- Company websites
+- Search engine results
+- Competitor discovery
+- Funding signals
+- Recent news articles
 
-It then produces:
+The collected data is analyzed using **OpenAI GPT models** to generate a structured market intelligence report.
 
-A structured AI-generated company analysis
+The system then exports the results into structured outputs including **PDF reports and CSV logs**.
 
-A PDF report
+---
 
-A CSV history log of all analyses
+# Key Features
 
-This project demonstrates Python automation, API integrations, web scraping, and AI-powered analysis.
+## Company Website Discovery
+Automatically identifies the official company website using Google search via SerpAPI.
 
-Features
-Company Website Discovery
+## Competitor Discovery
+Searches for competitors using Google queries and applies AI filtering to extract real competing companies.
 
-Automatically finds the official company website using SerpAPI Google search.
+## Funding Signal Detection
+Collects signals related to funding, investors, and growth indicators from search results.
 
-Competitor Discovery
+## Website Scraping
+Extracts and cleans relevant textual content from the company’s official website to provide context for analysis.
 
-Searches Google for competitors and uses AI to extract real competing companies from search results.
+## News Monitoring
+Uses NewsAPI to collect the latest news articles related to the company.
 
-Funding Signal Detection
+## AI Market Intelligence Analysis
+All collected data is processed using OpenAI models to generate a structured intelligence report including:
 
-Collects signals about funding and investors from search results.
+- Company Summary
+- Industry & Market Context
+- Funding & Growth Signals
+- Competitor Landscape
+- Strategic Signals
+- Market Threats
+- Automation Opportunities
 
-Website Scraping
+---
 
-Scrapes and cleans text content from the company's website to provide context for analysis.
+# Automated Report Generation
 
-News Monitoring
+The system automatically exports the results into:
 
-Uses NewsAPI to collect the most recent news articles about the company.
+- **PDF Intelligence Report**
+- **CSV Analysis History Log**
 
-AI Market Analysis
+This allows tracking historical analyses over time.
 
-The collected data is analyzed using OpenAI GPT models to generate a structured intelligence report including:
+---
 
-Company Summary
+# Example Output
 
-Industry & Market
-
-Funding & Growth Signals
-
-Competitor Landscape
-
-Strategic Signals
-
-Threats
-
-Automation Opportunities
-
-Report Generation
-
-The analysis is automatically exported to:
-
-PDF report
-
-CSV history log
-
-Example Output
-
-Running the tool generates:
-
+```
 Enter company name: Stripe
 
 Finding company website...
@@ -92,103 +85,115 @@ Collecting news...
 Running AI analysis...
 
 Outputs created:
-
 Stripe_report.pdf
 analysis_history.csv
-Project Structure
-company-intelligence-tool
+```
+
+---
+
+# Project Structure
+
+```
+company-intelligence-tool/
 
 main.py
 README.md
-analysis_history.csv (generated automatically)
+analysis_history.csv
 .env
+```
 
-Required libraries:
+---
 
-requests
-beautifulsoup4
-python-dotenv
-openai
-reportlab
+# Installation
 
-3. Create a .env file
+Install required dependencies:
+
+```
+pip install requests beautifulsoup4 python-dotenv openai reportlab
+```
+
+---
+
+# Environment Variables
+
+Create a `.env` file in the project directory:
+
+```
 OPENAI_API_KEY=your_openai_key
 SERPAPI_KEY=your_serpapi_key
 NEWS_API_KEY=your_newsapi_key
-Usage
+```
 
-Run the program:
+---
 
+# Usage
+
+Run the tool:
+
+```
 python main.py
+```
 
 Then enter a company name:
 
+```
 Enter company name: Stripe
+```
 
-The tool will automatically:
+The system will automatically:
 
-Find the company website
+1. Discover the company website
+2. Identify competitors
+3. Gather funding signals
+4. Scrape website data
+5. Collect recent news
+6. Run AI analysis
+7. Generate a structured PDF intelligence report
 
-Identify competitors
+---
 
-Gather funding signals
+# Example Use Cases
 
-Scrape website data
+This system can be used for:
 
-Collect recent news
+- Market intelligence
+- Competitive analysis
+- Startup research
+- Sales prospecting
+- Investment research
+- Strategic business insights
+- Venture capital scouting
 
-Run AI analysis
+---
 
-Generate a PDF report
+# Technologies Used
 
-Example Use Cases
+Python  
+OpenAI API  
+SerpAPI  
+NewsAPI  
+BeautifulSoup  
+ReportLab  
+dotenv  
 
-This tool can be used for:
+---
 
-Market intelligence
+# Future Improvements
 
-Competitive analysis
+Possible extensions for the project include:
 
-Startup research
+- Competitor website analysis
+- LinkedIn company data integration
+- Automatic funding round tracking
+- Competitor landscape visualization
+- Web dashboard interface
+- Automated daily monitoring
+- Company trend tracking
 
-Sales prospecting
+---
 
-Investment research
+# Author
 
-Strategic business insights
+Built as part of an **AI Automation Portfolio Project**.
 
-Technologies Used
-
-Python
-
-OpenAI API
-
-SerpAPI
-
-NewsAPI
-
-BeautifulSoup
-
-ReportLab
-
-dotenv
-
-Future Improvements
-
-Possible extensions for the project:
-
-Add competitor website analysis
-
-Add company LinkedIn data
-
-Track funding rounds automatically
-
-Visualize competitor landscape
-
-Build a web dashboard
-
-Automate daily monitoring
-
-Author
-
-Built as part of an AI Automation Portfolio project.
+The goal of this project is to demonstrate the ability to design **AI-powered intelligence systems that automate complex research and analysis workflows**.
